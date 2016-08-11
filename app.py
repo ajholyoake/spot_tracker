@@ -7,8 +7,8 @@ import logging
 import traceback
 from contextlib import closing
 import json
-import threading
-
+import random
+from threading import Timer
 
 app = Flask(__name__,static_folder='static',static_url_path='')
 app.config['SECRET_KEY'] = '***REMOVED***'
@@ -18,8 +18,6 @@ socketio = SocketIO(app)
 api_url = r"***REMOVED***"
 db_location = r"db/spot.db"
 
-from datetime import datetime
-from threading import Timer
 
 class PeriodicTask(object):
     def __init__(self, interval, callback, daemon=True, **kwargs):
@@ -63,18 +61,19 @@ def close_connection(exception):
 def setup():
     init_db()
     parse_spot_data()
-    task = PeriodicTask(interval=1, callback=dummy_data)
+    task = PeriodicTask(interval=120, callback=parse_upload_emit)
     task.run()
 
 def parse_spot_data():
     r = requests.get(api_url)
     if r.status_code == 200:
         response_data = r.json()['response']['feedMessageResponse']['messages']['message']
-        upload_new_points(response_data)
+        new_points = upload_new_points(response_data)
+        return new_points;
 
-def dummy_data():
-    print "In here"
-    socketio.emit('new points',{'data':'stuff'})
+def parse_upload_emit():
+    new_data = parse_spot_data()
+    socketio.emit('new points',new_data)
 
 def upload_new_points(in_data):
     command = "INSERT INTO gps_points (spot_id, unix_time, latitude, longitude, date_time) VALUES ({spot_id},{unix_time},{latitude},{longitude},\"{date_time}\")"

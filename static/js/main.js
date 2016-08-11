@@ -8,16 +8,16 @@ function convertDate (spotDate)
 {
   if (spotDate !== undefined)
     {
-  var yr1   = parseInt(spotDate.substring(0,4));
-  var mon1  = parseInt(spotDate.substring(5,7));
-  var dt1   = parseInt(spotDate.substring(8,10));
-  var hr1   = parseInt(spotDate.substring(11,13));
-  var min1  = parseInt(spotDate.substring(14,16));
-  var sec1  = parseInt(spotDate.substring(17,19));
+      var yr1   = parseInt(spotDate.substring(0,4));
+      var mon1  = parseInt(spotDate.substring(5,7));
+      var dt1   = parseInt(spotDate.substring(8,10));
+      var hr1   = parseInt(spotDate.substring(11,13));
+      var min1  = parseInt(spotDate.substring(14,16));
+      var sec1  = parseInt(spotDate.substring(17,19));
 
-  var date1 = new Date(yr1, mon1-1, dt1,hr1,min1,sec1);
+      var date1 = new Date(yr1, mon1-1, dt1,hr1,min1,sec1);
 
-  return date1;
+      return date1;
     }
     else
     {
@@ -31,7 +31,7 @@ function makeinfobox(pointnum, thispoint, theotherpoint)  {
  var infoboxtext;
  var timestamp;
  
- timestamp = convertDate(thispoint.timestamp); // we convert it from ISO format to something more readable
+ timestamp = convertDate(thispoint.date_time); // we convert it from ISO format to something more readable
  infoboxtext = String(timestamp);
  if (pointnum > 0)  {  // no point calculating distance on the point
   latlnga =  gPoint(thispoint);
@@ -42,48 +42,46 @@ function makeinfobox(pointnum, thispoint, theotherpoint)  {
  return infoboxtext; 
 }
 
-
-
-function drawPath(points,map)
+function initPath(map)
 {
-  var trackline = [];
-for ( i = 0 ; i < points.length ; i++ )  {
-  var point = points[i];
-  var contentstring = "Point " + i; 
-  var spot = gPoint(point);
-  // here we create the text that is displayed when we click on a marker
-  var windowtext = makeinfobox(i, points[i], points[i-1]);  // if you tell anybody I did this I'll deny it vehemently
-  var marker = new google.maps.Marker( {
-   position: spot, 
-   map: map,
-   scale:3,
-   title: points[i].timestamp,
-   html: windowtext
-  } );
   
-  // instantiate the infowindow
-  
-  var infowindow = new google.maps.InfoWindow( {
-  } );
-
-  // when you click on a marker, pop up an info window
-  google.maps.event.addListener(marker, 'click', function() {
-   infowindow.setContent(this.html);
-   infowindow.open(map, this);
-  });
-
-  // set up the array from which we'll draw a line connecting the readings
-  trackline.push(spot);
- }  
- 
- // here's where we actually draw the path 
  var trackpath = new google.maps.Polyline( {
-  path: trackline,
+  path: [],
   strokeColor: "#FF00FF",
   strokeWeight: 3
  });
  trackpath.setMap(map);
  return trackpath;
+}
+
+function addPointsToPath(points,path,map)
+{
+  var trackline = path.getPath();
+  for ( i = 0 ; i < points.length ; i++ )  {
+    var point = gPoint(points[i]);
+    var contentstring = "Point " + i;
+    var windowtext = makeinfobox(i, points[i], points[i-1]);
+    var marker = new google.maps.Marker( {
+     position: point, 
+     map: map,
+     title: points[i].date_time,
+     html: windowtext
+    } );
+
+    var infowindow = new google.maps.InfoWindow( {
+    } );
+
+    // when you click on a marker, pop up an info window
+    google.maps.event.addListener(marker, 'click', function() {
+     infowindow.setContent(this.html);
+     infowindow.open(map, this);
+    });
+
+    // set up the array from which we'll draw a line connecting the readings
+    
+    trackline.push(point);
+   }
+   path.setPath(trackline);
 }
 
 
@@ -103,15 +101,18 @@ jQuery(document).ready(function () {
     map.setOptions({
         //styles: style
     });
-    path = drawPath(start_data,map);
+
+    var path = initPath(map);
+    addPointsToPath(start_data,path,map);
 
     var socket = io.connect('http://' + document.domain + ':' + location.port);
-    socket.on('connect', function() {
-        socket.emit('my event', {data: 'I\'m connected!'});
-    });
     socket.on('new points',function(data){
       console.log(data);
-      $('newpoints').append($('span').html(JSON.stringify(data)));
+      if(data.length > 0)
+        {
+          addPointsToPath(data,path,map);
+          map.setCenter(gPoint(data[data.length-1]));
+        }
     });
 
     window.socket = socket;
