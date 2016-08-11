@@ -1,6 +1,6 @@
 
 import sqlite3
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, current_app
 from flask_socketio import SocketIO
 import requests
 import logging
@@ -27,10 +27,11 @@ class PeriodicTask(object):
         self.kwargs   = kwargs
 
     def run(self):
-        self.callback(**self.kwargs)
-        t = Timer(self.interval, self.run)
-        t.daemon = self.daemon
-        t.start()
+        with app.app_context():
+            self.callback(**self.kwargs)
+            t = Timer(self.interval, self.run)
+            t.daemon = self.daemon
+            t.start()
 
 
 def make_dicts(cursor, row):
