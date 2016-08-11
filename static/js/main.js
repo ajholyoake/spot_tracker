@@ -4,6 +4,15 @@ function gPoint ( point )
   return new google.maps.LatLng(point.latitude,point.longitude);
 }
 
+var circle ={
+    path: google.maps.SymbolPath.CIRCLE,
+    fillColor: 'blue',
+    fillOpacity: 1.0,
+    scale: 3,
+    strokeColor: 'black',
+    strokeWeight: 1
+};
+
 function convertDate (spotDate)
 {
   if (spotDate !== undefined)
@@ -63,6 +72,7 @@ function addPointsToPath(points,path,map)
     var windowtext = makeinfobox(i, points[i], points[i-1]);
     var marker = new google.maps.Marker( {
      position: point, 
+     icon: circle,
      map: map,
      title: points[i].date_time,
      html: windowtext
@@ -102,6 +112,22 @@ jQuery(document).ready(function () {
         //styles: style
     });
 
+    var current_position = new google.maps.Marker( {
+     position: last_point, 
+     map: map,
+     title: lp.date_time,
+     html: "Current Location <br>" + String(convertDate(last_point.date_time))
+    } );
+
+    var infowindow = new google.maps.InfoWindow( {
+    } );
+
+    // when you click on a marker, pop up an info window
+    google.maps.event.addListener(current_position, 'click', function() {
+     infowindow.setContent(this.html);
+     infowindow.open(map, this);
+    });
+
     var path = initPath(map);
     addPointsToPath(start_data,path,map);
 
@@ -111,7 +137,8 @@ jQuery(document).ready(function () {
       if(data.length > 0)
         {
           addPointsToPath(data,path,map);
-          map.setCenter(gPoint(data[data.length-1]));
+          current_position.setPosition(gPoint(data[data.length-1]));
+          map.panTo(gPoint(data[data.length-1]));
         }
     });
 
