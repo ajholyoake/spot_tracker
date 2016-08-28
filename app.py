@@ -97,7 +97,7 @@ def upload_new_points(in_data):
 def get_points():
     db = get_db()
     with closing(db.cursor()) as cursor:
-        cursor.execute("SELECT * FROM gps_points ORDER BY unix_time")
+        cursor.execute("SELECT * FROM gps_points WHERE unix_time > 1471035369 ORDER BY unix_time")
         rv = cursor.fetchall() 
         return rv
     return []

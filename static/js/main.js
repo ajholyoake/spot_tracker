@@ -1,4 +1,4 @@
-
+var label = 0;
 function gPoint ( point )
 {
   return new google.maps.LatLng(point.latitude,point.longitude);
@@ -17,14 +17,14 @@ function convertDate (spotDate)
 {
   if (spotDate !== undefined)
     {
-      var yr1   = parseInt(spotDate.substring(0,4));
-      var mon1  = parseInt(spotDate.substring(5,7));
-      var dt1   = parseInt(spotDate.substring(8,10));
-      var hr1   = parseInt(spotDate.substring(11,13));
-      var min1  = parseInt(spotDate.substring(14,16));
-      var sec1  = parseInt(spotDate.substring(17,19));
+      var yr1   = parseInt(spotDate.substring(0,4),10);
+      var mon1  = parseInt(spotDate.substring(5,7),10);
+      var dt1   = parseInt(spotDate.substring(8,10),10);
+      var hr1   = parseInt(spotDate.substring(11,13),10);
+      var min1  = parseInt(spotDate.substring(14,16),10);
+      var sec1  = parseInt(spotDate.substring(17,19),10);
 
-      var date1 = new Date(yr1, mon1-1, dt1,hr1,min1,sec1);
+      var date1 = new Date(Date.UTC(yr1, mon1-1, dt1,hr1,min1,sec1));
 
       return date1;
     }
@@ -57,7 +57,8 @@ function initPath(map)
  var trackpath = new google.maps.Polyline( {
   path: [],
   strokeColor: "#FF00FF",
-  strokeWeight: 3
+  strokeWeight: 3,
+  geodesic:true
  });
  trackpath.setMap(map);
  return trackpath;
@@ -66,18 +67,43 @@ function initPath(map)
 function addPointsToPath(points,path,map)
 {
   var trackline = path.getPath();
+
   for ( i = 0 ; i < points.length ; i++ )  {
     var point = gPoint(points[i]);
     var contentstring = "Point " + i;
     var windowtext = makeinfobox(i, points[i], points[i-1]);
-    var marker = new google.maps.Marker( {
-     position: point, 
-     icon: circle,
-     map: map,
-     title: points[i].date_time,
-     html: windowtext
-    } );
-
+    var stop_point = false;
+    if ( i > 0)
+      {
+        var this_time = points[i].unix_time;
+        var previous_time = points[i-1].unix_time;
+        var difference = this_time - previous_time;
+        if (difference > 6*60*60)
+          {
+            stop_point = true;
+          }
+      }
+    if (stop_point)
+      {
+        var marker = new google.maps.Marker( {
+         position: point, 
+         map: map,
+         title: points[i].date_time,
+         label: String(label % 10),
+         html: "We stopped here for at least 8 hours <br>" + windowtext
+        } );
+        label = label + 1;
+      }
+    else 
+      {
+        var marker = new google.maps.Marker( {
+         position: point, 
+         icon: circle,
+         map: map,
+         title: points[i].date_time,
+         html: windowtext
+        } );
+      }
     var infowindow = new google.maps.InfoWindow( {
     } );
 
@@ -90,6 +116,7 @@ function addPointsToPath(points,path,map)
     // set up the array from which we'll draw a line connecting the readings
     
     trackline.push(point);
+    previous_point = point;
    }
    path.setPath(trackline);
 }
@@ -116,7 +143,7 @@ jQuery(document).ready(function () {
      position: last_point, 
      map: map,
      title: lp.date_time,
-     html: "Current Location <br>" + String(convertDate(last_point.date_time))
+     html: "Current Location <br>" + String(convertDate(lp.date_time))
     } );
 
     var infowindow = new google.maps.InfoWindow( {
