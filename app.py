@@ -1,4 +1,5 @@
-
+import datetime
+import traceback
 import sqlite3
 from flask import Flask, g, render_template, current_app
 from flask_socketio import SocketIO
@@ -28,6 +29,7 @@ class PeriodicTask(object):
 
     def run(self):
         with app.app_context():
+            print("running task {time}".format(time=datetime.datetime.now().time().isoformat()))
             self.callback(**self.kwargs)
             t = Timer(self.interval, self.run)
             t.daemon = self.daemon
@@ -62,7 +64,7 @@ def close_connection(exception):
 def setup():
     init_db()
     parse_spot_data()
-    task = PeriodicTask(interval=120, callback=parse_upload_emit)
+    task = PeriodicTask(interval=600, callback=parse_upload_emit)
     task.run()
 
 def parse_spot_data():
@@ -73,8 +75,11 @@ def parse_spot_data():
         return new_points;
 
 def parse_upload_emit():
-    new_data = parse_spot_data()
-    socketio.emit('new points',new_data)
+    try:
+        new_data = parse_spot_data()
+        socketio.emit('new points',new_data)
+    except Exception as e:
+        traceback.print_exc()
 
 def upload_new_points(in_data):
     command = "INSERT INTO gps_points (spot_id, unix_time, latitude, longitude, date_time) VALUES ({spot_id},{unix_time},{latitude},{longitude},\"{date_time}\")"
