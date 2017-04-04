@@ -96,22 +96,22 @@ function addPointsToPath(points,path,map)
       }
     else 
       {
-        var marker = new google.maps.Marker( {
-         position: point, 
-         icon: circle,
-         map: map,
-         title: points[i].date_time,
-         html: windowtext
-        } );
-      }
-    var infowindow = new google.maps.InfoWindow( {
-    } );
+//var marker = new google.maps.Marker( {
+//         position: point, 
+//         icon: circle,
+//         map: map,
+//         title: points[i].date_time,
+//         html: windowtext
+//        } );
+//      }
+   // var infowindow = new google.maps.InfoWindow( {
+   // } );
 
     // when you click on a marker, pop up an info window
-    google.maps.event.addListener(marker, 'click', function() {
-     infowindow.setContent(this.html);
-     infowindow.open(map, this);
-    });
+    //google.maps.event.addListener(marker, 'click', function() {
+    // infowindow.setContent(this.html);
+    // infowindow.open(map, this);
+    //});
 
     // set up the array from which we'll draw a line connecting the readings
     

@@ -10,13 +10,15 @@ from contextlib import closing
 import json
 import random
 from threading import Timer
+import sys
+import secrets
 
 app = Flask(__name__,static_folder='static',static_url_path='')
-app.config['SECRET_KEY'] = '***REMOVED***'
+app.config['SECRET_KEY'] = secrets.app_key
 socketio = SocketIO(app)
 
 
-api_url = r"***REMOVED***"
+api_url = secrets.api_url
 db_location = r"db/spot.db"
 
 
@@ -64,6 +66,10 @@ def close_connection(exception):
 def setup():
     init_db()
     parse_spot_data()
+    if len(sys.argv) > 1 and sys.argv[1] == 'nospot':
+        print sys.argv
+        print 'Not running spot api task'
+        return
     task = PeriodicTask(interval=600, callback=parse_upload_emit)
     task.run()
 
@@ -119,7 +125,7 @@ def handle_my_custom_event(data):
 
 if __name__ == "__main__":
     #app.run(host='0.0.0.0',debug=True)
-    socketio.run(app,host='0.0.0.0',use_reloader=True)
+    socketio.run(app,host='0.0.0.0',port=5555,use_reloader=True)
 
 
 
